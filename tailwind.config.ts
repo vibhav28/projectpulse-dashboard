@@ -12,6 +12,9 @@ export default {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+    },
     extend: {
       colors: {
         border: "hsl(var(--border))",
@@ -46,6 +49,10 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        surface: {
+          DEFAULT: "hsl(var(--surface))",
+          foreground: "hsl(var(--surface-foreground))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
