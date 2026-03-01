@@ -11,21 +11,26 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file (explicit path so it works from any CWD)
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ekx66be1op8m)a%o$p0&(h-_pfljm6od&!85lwky=e6^q2cuhx'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-ekx66be1op8m)a%o$p0&(h-_pfljm6od&!85lwky=e6^q2cuhx')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -47,6 +52,7 @@ INSTALLED_APPS = [
     'integrations',
     'datasets',
     'chat',
+    'projects',
 ]
 
 MIDDLEWARE = [
@@ -95,7 +101,48 @@ DATABASES = {
 AUTH_USER_MODEL = 'users.User'
 
 # CORS Settings
-CORS_ALLOW_ALL_ORIGINS = True # For development only
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Vite dev server (default)
+    "http://localhost:8080",  # Vite alternate port
+    "http://localhost:8081",  # Vite alternate port
+    "http://localhost:3000",  # Alternative React port
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:3000",
+]
+CORS_ALLOW_CREDENTIALS = True
+
+# Groq AI Configuration
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
+
+CHATBOT_CONFIG = {
+    'max_history_messages': 50,
+    'session_timeout_minutes': 30,
+    'max_message_length': 2000,
+    'model_name': 'llama-3.3-70b-versatile',  # Groq free-tier model
+    'max_messages_per_session': 20,  # Limit: 20 user messages per session
+}
+
+# REST Framework Configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+# JWT Configuration
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
 
 
 # Password validation

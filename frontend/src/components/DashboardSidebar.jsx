@@ -1,9 +1,10 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { MessageSquare, Upload, Link2, LogOut, Zap } from "lucide-react";
+import { MessageSquare, Upload, Link2, LogOut, Zap, BarChart2 } from "lucide-react";
 import { clearToken } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 const navItems = [
   { label: "Chat", path: "/dashboard", icon: MessageSquare },
+  { label: "Dashboard", path: "/dashboard/projects", icon: BarChart2 },
   { label: "Upload Dataset", path: "/dashboard/upload", icon: Upload },
   { label: "Connect Jira", path: "/dashboard/jira", icon: Link2 },
 ];

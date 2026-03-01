@@ -3,20 +3,26 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Send, Loader2, ChevronDown, ChevronUp, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/auth";
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
 export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
   const [expandedSources, setExpandedSources] = useState(
     /* @__PURE__ */ new Set(),
   );
   const scrollRef = useRef(null);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
       behavior: "smooth",
     });
   }, [messages]);
+
   const toggleSource = (idx) => {
     setExpandedSources((prev) => {
       const next = new Set(prev);
@@ -24,32 +30,56 @@ export default function Chat() {
       return next;
     });
   };
+
   const handleSend = async () => {
     const query = input.trim();
     if (!query || loading) return;
+
     const userMsg = { role: "user", content: query };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
+
     try {
-      const res = await apiFetch("/chat", {
+      const payload = {
+        message: query,
+      };
+
+      // Include session_id if we have one
+      if (sessionId) {
+        payload.session_id = sessionId;
+      }
+
+      const res = await apiFetch(`${API_URL}/chat/`, {
         method: "POST",
-        body: JSON.stringify({ query }),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to get response");
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to get response");
+      }
+
       const data = await res.json();
+
+      // Save session ID for future messages
+      if (data.session_id && !sessionId) {
+        setSessionId(data.session_id);
+      }
+
       const assistantMsg = {
         role: "assistant",
-        content: data.answer || data.response || "No response received.",
+        content: data.response || "No response received.",
         sources: data.sources || data.source_documents,
       };
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch {
+    } catch (error) {
+      console.error("Chat error:", error);
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Sorry, something went wrong. Please try again.",
+          content: error.message || "Sorry, something went wrong. Please try again.",
         },
       ]);
     } finally {

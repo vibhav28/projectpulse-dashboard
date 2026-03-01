@@ -8,32 +8,48 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 export default function Signup() {
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     if (password !== confirmPassword) {
-      toast({ title: "Passwords don't match", variant: "destructive" });
+      setError("Passwords don't match.");
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch("/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+      let res;
+      try {
+        res = await fetch(`${API_URL}/auth/register/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, full_name: fullName, password, password2: confirmPassword }),
+        });
+      } catch (networkErr) {
+        throw new Error("Cannot reach the server. Make sure the backend is running on port 8000.");
+      }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Signup failed");
+        // Flatten Django field-level error dicts → readable string
+        const msg = typeof data === "object"
+          ? Object.entries(data)
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+            .join(" | ")
+          : "Signup failed";
+        throw new Error(msg);
       }
       toast({ title: "Account created! Please log in." });
       navigate("/login");
     } catch (err) {
-      toast({ title: err.message || "Signup failed", variant: "destructive" });
+      setError(err.message || "Signup failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -61,6 +77,22 @@ export default function Signup() {
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Inline error banner */}
+          {error && (
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-xs text-destructive">
+              {error}
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="fullname">Full Name</Label>
+            <Input
+              id="fullname"
+              type="text"
+              placeholder="Jane Doe"
+              value={fullName}
+              onChange={(e) => { setFullName(e.target.value); setError(""); }}
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -68,7 +100,7 @@ export default function Signup() {
               type="email"
               placeholder="you@company.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setError(""); }}
               required
             />
           </div>
@@ -79,7 +111,7 @@ export default function Signup() {
               type="password"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setError(""); }}
               required
             />
           </div>
@@ -90,7 +122,7 @@ export default function Signup() {
               type="password"
               placeholder="••••••••"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
               required
             />
           </div>

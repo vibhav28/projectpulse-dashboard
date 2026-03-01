@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
 import UploadDataset from "./pages/UploadDataset";
 import ConnectJira from "./pages/ConnectJira";
+import ProjectsOverview from "./pages/ProjectsOverview";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route index element={<Chat />} />
             <Route path="upload" element={<UploadDataset />} />
             <Route path="jira" element={<ConnectJira />} />
+            <Route path="projects" element={<ProjectsOverview />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

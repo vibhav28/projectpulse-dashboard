@@ -6,35 +6,51 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { setToken } from "@/lib/auth";
-import { useToast } from "@/hooks/use-toast";
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { toast } = useToast();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
     try {
-      const res = await fetch("/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+      let res;
+      try {
+        res = await fetch(`${API_URL}/auth/login/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+      } catch (networkErr) {
+        throw new Error("Cannot reach the server. Make sure the backend is running on port 8000.");
+      }
       if (!res.ok) {
-        const data2 = await res.json().catch(() => ({}));
-        throw new Error(data2.message || "Login failed");
+        const data = await res.json().catch(() => ({}));
+        // Flatten Django field-level or non-field errors
+        const msg = typeof data === "object"
+          ? Object.entries(data)
+            .map(([k, v]) => `${k === "non_field_errors" ? "" : k + ": "}${Array.isArray(v) ? v.join(", ") : v}`)
+            .join(" ")
+            .trim()
+          : "Login failed";
+        throw new Error(msg || "Invalid credentials");
       }
       const data = await res.json();
-      setToken(data.token);
+      setToken(data.access);
       navigate("/dashboard");
     } catch (err) {
-      toast({ title: err.message || "Login failed", variant: "destructive" });
+      setError(err.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <motion.div
@@ -58,6 +74,12 @@ export default function Login() {
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Inline error banner */}
+          {error && (
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-xs text-destructive">
+              {error}
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -65,7 +87,7 @@ export default function Login() {
               type="email"
               placeholder="you@company.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setError(""); }}
               required
             />
           </div>
@@ -76,7 +98,7 @@ export default function Login() {
               type="password"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setError(""); }}
               required
             />
           </div>

@@ -33,4 +33,7 @@ router.register(r'chat-messages', ChatMessageViewSet, basename='chatmessage')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
+    path('api/auth/', include('users.urls')),  # Authentication endpoints
+    path('api/chat/', include('chat.urls')),   # AI-powered chat endpoint
+    path('api/projects/', include('projects.urls')),  # Projects CRUD + stats
 ]

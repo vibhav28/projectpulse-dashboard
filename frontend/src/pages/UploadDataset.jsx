@@ -9,29 +9,57 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/auth";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+
 export default function UploadDataset() {
   const [file, setFile] = useState(null);
-  const [status, setStatus] = useState("idle");
+  const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [message, setMessage] = useState("");
   const inputRef = useRef(null);
+
   const handleUpload = async () => {
     if (!file) return;
     setStatus("loading");
+    setMessage("");
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await apiFetch("/upload-csv", {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Upload failed");
+      formData.append("file_name", file.name);
+
+      let res;
+      try {
+        res = await apiFetch(`${API_URL}/datasets/`, {
+          method: "POST",
+          body: formData,
+        });
+      } catch (networkErr) {
+        throw new Error(
+          "Cannot reach the server. Make sure the backend is running on port 8000."
+        );
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg =
+          typeof data === "object"
+            ? Object.entries(data)
+              .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+              .join(" | ")
+            : "Upload failed";
+        throw new Error(msg || "Upload failed");
+      }
+
       setStatus("success");
       setMessage("Dataset uploaded successfully!");
-    } catch {
+      setFile(null);
+      if (inputRef.current) inputRef.current.value = "";
+    } catch (err) {
       setStatus("error");
-      setMessage("Upload failed. Please try again.");
+      setMessage(err.message || "Upload failed. Please try again.");
     }
   };
+
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <motion.div
@@ -84,14 +112,14 @@ export default function UploadDataset() {
         </Button>
         {status === "success" && (
           <div className="flex items-center gap-2 mt-4 text-sm text-primary">
-            <CheckCircle2 className="h-4 w-4" />
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
             {message}
           </div>
         )}
         {status === "error" && (
-          <div className="flex items-center gap-2 mt-4 text-sm text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            {message}
+          <div className="flex items-start gap-2 mt-4 text-sm text-destructive rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>{message}</span>
           </div>
         )}
       </motion.div>
