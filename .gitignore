@@ -49,3 +49,5 @@ media/
 staticfiles/
 *.pyc
 
+backend/datasets/*.csv
+database/*.csv
