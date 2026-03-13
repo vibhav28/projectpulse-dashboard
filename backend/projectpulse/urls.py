@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
 from users.views import UserViewSet
 from integrations.views import JiraConnectionViewSet, CachedTaskViewSet
@@ -30,10 +30,20 @@ router.register(r'datasets', DatasetViewSet, basename='dataset')
 router.register(r'chat-sessions', ChatSessionViewSet, basename='chatsession')
 router.register(r'chat-messages', ChatMessageViewSet, basename='chatmessage')
 
+from django.views.generic import TemplateView
+import re
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/auth/', include('users.urls')),  # Authentication endpoints
     path('api/chat/', include('chat.urls')),   # AI-powered chat endpoint
     path('api/projects/', include('projects.urls')),  # Projects CRUD + stats
+    # Catch-all to serve React SPA (excluding api, admin, and static file requests)
+    re_path(r'^(?!api/|admin/|assets/|.*\.).*$', TemplateView.as_view(template_name='index.html')),
 ]
+
+from django.conf import settings
+from django.conf.urls.static import static
+import os
+urlpatterns += static('/assets/', document_root=os.path.join(settings.FRONTEND_DIR, 'assets'))
